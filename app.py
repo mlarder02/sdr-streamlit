@@ -25,8 +25,7 @@ def call_gemini(form_data):
     api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
 
     prompt = f"""
-        You are an expert sales strategist and coach at Snowflake, specializing in the MEDDPICC methodology. 
-        Your task is to generate a complete pre-call briefing package for a Sales Development Representative based on the following information.
+        You are an expert sales strategist for Snowflake. Based on the prospect info below, generate a JSON object for a pre-call briefing.
 
         **Prospect Information:**
         - Name: {form_data['personaName']}
@@ -35,8 +34,8 @@ def call_gemini(form_data):
         - Status: {form_data['status']}
         - LinkedIn Info: {form_data['linkedinInfo']}
         - Other Info: {form_data['supportingInfo']}
-
-        Generate a JSON object with the following structure. Do not include any other text or markdown formatting.
+        
+        Generate the JSON based on the required schema.
     """
 
     # This is the JSON schema the AI will follow for its response
@@ -44,6 +43,7 @@ def call_gemini(form_data):
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             "responseMimeType": "application/json",
+            "temperature": 0.2, # Lower temperature for more predictable JSON output
             "responseSchema": {
                 "type": "OBJECT",
                 "properties": {
@@ -64,7 +64,14 @@ def call_gemini(form_data):
                 },
                 "required": ["justification", "useCase", "discoveryQuestions", "openingStatements"]
             }
-        }
+        },
+        # Adding safety settings to prevent blocks on valid content
+        "safetySettings": [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        ]
     }
 
     try:
