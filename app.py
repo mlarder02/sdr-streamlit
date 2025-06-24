@@ -69,7 +69,7 @@ def call_gemini(form_data):
 
     try:
         response = requests.post(api_url, json=payload)
-        response.raise_for_status()  # Raises an HTTPError for bad responses
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx or 5xx)
         
         result = response.json()
 
@@ -81,8 +81,21 @@ def call_gemini(form_data):
             st.json(result) # Display the invalid response for debugging
             return None
 
+    except requests.exceptions.HTTPError as e:
+        # This is the improved error handling for 400 Bad Request
+        st.error(f"Error: API call failed with status code {e.response.status_code}.")
+        st.write("This is likely due to an issue with the request payload or the model's response not matching the required format.")
+        try:
+            # Try to parse and display the detailed error message from Google
+            error_details = e.response.json()
+            st.write("API Error Details:")
+            st.json(error_details)
+        except json.JSONDecodeError:
+            st.write("Could not parse error details from API response:")
+            st.text(e.response.text)
+        return None
     except requests.exceptions.RequestException as e:
-        st.error(f"Error: API call failed: {e}")
+        st.error(f"Error: Network request failed: {e}")
         return None
     except json.JSONDecodeError:
         st.error("Error: Failed to decode JSON from API response.")
